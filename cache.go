@@ -20,7 +20,10 @@ func NewCache() Cache {
 
 func (c *Cache) Get(key string) (string, bool) {
 	valWithTime, ok := c.memo[key]
-	return valWithTime.value, ok && (valWithTime.notCanExpire || !time.Now().After(valWithTime.deadline))
+	if ok && (valWithTime.notCanExpire || !time.Now().After(valWithTime.deadline)) {
+		return valWithTime.value, true
+	}
+	return "", false
 }
 
 func (c *Cache) Put(key, value string) {
@@ -31,9 +34,11 @@ func (c *Cache) Put(key, value string) {
 }
 
 func (c *Cache) Keys() []string {
+	currentTime := time.Now()
 	keys := make([]string, 0, len(c.memo))
 	for key := range c.memo {
-		if _, ok := c.Get(key); ok {
+		valWithTime, ok := c.memo[key]
+		if ok && (valWithTime.notCanExpire || !currentTime.After(valWithTime.deadline)) {
 			keys = append(keys, key)
 		}
 	}
